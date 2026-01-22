@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/eygl/gator/internal/config"
+	"github.com/eygl/gator/internal/database"
+	"github.com/google/uuid"
 )
 
 type commands struct {
@@ -17,6 +21,7 @@ type command struct {
 
 type state struct {
 	Cfg *config.Config
+	DB  *database.Queries
 }
 
 func handleLogin(s *state, cmd command) error {
@@ -24,11 +29,41 @@ func handleLogin(s *state, cmd command) error {
 		return fmt.Errorf("No username given.")
 	}
 	username := cmd.Args[0]
-	err := s.Cfg.SetUser(username)
+	_, err := s.DB.GetUser(context.Background(), username)
+	if err != nil {
+		return fmt.Errorf("User %s does not exists.", username)
+	}
+
+	err = s.Cfg.SetUser(username)
 	if err != nil {
 		return err	
 	}
-	fmt.Printf("User %s has logged in.\n", username)
+	return nil
+}
+
+func handleRegister(s *state, cmd command) error {
+	if len(cmd.Args) == 0 {
+		return fmt.Errorf("No username given.")
+	}
+
+	username := cmd.Args[0]
+	user, err := s.DB.GetUser(context.Background(), username)
+	if user.Name == username {
+		return fmt.Errorf("User %s is already registered.\n", username)
+	}
+
+	userParams := database.CreateUserParams{
+		ID: uuid.New(),
+		CreatedAt: time.Now(),	
+		UpdatedAt: time.Now(),	
+		Name: username,
+	}
+
+	_, err = s.DB.CreateUser(context.Background(),userParams)
+	err = s.Cfg.SetUser(username)
+	if err != nil {
+		return fmt.Errorf("Query error. Could not register user.")
+	}
 	return nil
 }
 

@@ -1,20 +1,32 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/eygl/gator/internal/config"
+	"github.com/eygl/gator/internal/database"
+	_ "github.com/lib/pq"
 )
 
 func main() {
+
   cfg, err := config.Read()
   if err != nil {
 		log.Fatalf("error reading config: %v", err)
   }
 	fmt.Printf("Read config again: %+v\n", cfg)
-	session_state := state{Cfg: &cfg}
+
+
+  db, err := sql.Open("postgres", cfg.DBURL)
+	dbQueries := database.New(db)
+
+	session_state := state{
+		Cfg: &cfg,
+		DB: dbQueries,
+	}
 
 	args := os.Args
 	if len(os.Args) <= 1 {
@@ -30,7 +42,8 @@ func main() {
 	}
 	cmds := commands{Commands: make(map[string]func(*state, command) error)}
 	cmds.register("login", handleLogin)
-//cmds.register("command", handleCommand)
+	cmds.register("register", handleRegister)
+	//cmds.register("command", handleCommand)
 
 	err = cmds.run(&session_state, cmd)
 	if err != nil {
