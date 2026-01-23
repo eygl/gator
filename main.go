@@ -17,8 +17,6 @@ func main() {
   if err != nil {
 		log.Fatalf("error reading config: %v", err)
   }
-	fmt.Printf("Read config again: %+v\n", cfg)
-
 
   db, err := sql.Open("postgres", cfg.DBURL)
 	dbQueries := database.New(db)
@@ -43,6 +41,8 @@ func main() {
 	cmds := commands{Commands: make(map[string]func(*state, command) error)}
 	cmds.register("login", handleLogin)
 	cmds.register("register", handleRegister)
+	cmds.register("reset", handleReset)
+	cmds.register("users", handleUsersList)
 	//cmds.register("command", handleCommand)
 
 	err = cmds.run(&session_state, cmd)

@@ -38,6 +38,7 @@ func handleLogin(s *state, cmd command) error {
 	if err != nil {
 		return err	
 	}
+	fmt.Printf("Logged in as %s\n", username)
 	return nil
 }
 
@@ -64,6 +65,31 @@ func handleRegister(s *state, cmd command) error {
 	if err != nil {
 		return fmt.Errorf("Query error. Could not register user.")
 	}
+	fmt.Printf("Registered as: %s\n", username)
+	return nil
+}
+
+func handleUsersList(s *state, cmd command) error {
+	users, err := s.DB.GetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+	for _, user := range users {
+		fmt.Printf("* %s", user)
+		if user == s.Cfg.CurrentUserName {
+			fmt.Print(" (current)")
+		} 	
+		fmt.Println()
+	}
+	return nil
+}
+
+func handleReset(s *state, cmd command) error {
+	err := s.DB.ResetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+	fmt.Println("User table has been reset.")
 	return nil
 }
 
